@@ -5,4 +5,3 @@ scipy>=1.11.0
 scikit-learn>=1.4.0
 plotly>=5.18.0
 requests>=2.31.0
-snakemake>=7.0

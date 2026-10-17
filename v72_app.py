@@ -1,11 +1,10 @@
 """
-🐄 Bovine SNP Platform v7.2 — Autonome (single file)
-v6.2 (toutes fonctionnalités) + v7.1 (rigueur scientifique) INLINE.
-Aucune dépendance aux modules v71_*.py externes.
+🐄 Bovine SNP Platform v7.2 — Autonome (single file, keys corrigées)
+v6.2 (toutes fonctionnalités) + v7.1 (rigueur) — INLINE
 """
 
 # ═══════════════════════════════════════════════════════════
-# IMPORTS — TOUJOURS EN PREMIER
+# IMPORTS
 # ═══════════════════════════════════════════════════════════
 import gzip, json, warnings, zipfile
 from collections import Counter
@@ -154,12 +153,11 @@ def render_axiom_page():
     st.header("🧬 Convertisseur Axiom → PED/MAP")
     st.markdown("Transforme un fichier Axiom en PED + MAP PLINK.")
     f = st.file_uploader("Fichier Axiom", type=["txt", "tsv", "csv",
-                                                  "ped", "gz"], key="ax_f")
+                                                  "ped", "gz"])
     c1, c2 = st.columns(2)
-    fp = c1.number_input("Parties FID", 1, 5, 2, 1, key="ax_fp")
-    sep = c2.selectbox("Séparateur", ["Tabulation", "Espace"], key="ax_s")
-    if f and st.button("Convertir", type="primary",
-                       use_container_width=True, key="ax_btn"):
+    fp = c1.number_input("Parties FID", 1, 5, 2, 1)
+    sep = c2.selectbox("Séparateur", ["Tabulation", "Espace"])
+    if f and st.button("Convertir", type="primary", use_container_width=True):
         try:
             with st.spinner("Parsing..."):
                 samples, geno, n_snp = parse_axiom(f.read(), f.name)
@@ -182,15 +180,15 @@ def render_axiom_page():
         except Exception as e:
             st.error(f"❌ {e}")
     if st.session_state.get("_ax_ped"):
-        c1, c2, c3 = st.columns(3)
+        c1, c2 = st.columns(2)
         c1.download_button("⬇ .ped",
                            st.session_state["_ax_ped"].encode("utf-8"),
                            "converted.ped", "text/plain",
-                           use_container_width=True, key="dl_ax_p")
+                           use_container_width=True)
         c2.download_button("⬇ .map",
                            st.session_state["_ax_map"].encode("utf-8"),
                            "converted.map", "text/plain",
-                           use_container_width=True, key="dl_ax_m")
+                           use_container_width=True)
 
 # ═══════════════════════════════════════════════════════════
 # PARSERS
@@ -495,7 +493,7 @@ def admix_nmf(g, K=3, seed=42, mi=500):
     return W / s, m.components_
 
 # ═══════════════════════════════════════════════════════════
-# LD DECAY / ROH / Ne
+# LD / ROH / Ne
 # ═══════════════════════════════════════════════════════════
 @cached
 def ld_decay(g, bp, mk=1000, ms=1500, seed=42):
@@ -641,7 +639,6 @@ def fst_weir_cockerham_inline(gt, labels):
     return fst, theta, se
 
 def bootstrap_fst_inline(gt, labels, n_boot=500, ci=0.95, seed=42):
-    """Bootstrap IC sur FST Weir-Cockerham."""
     rng = np.random.default_rng(seed)
     n = gt.shape[0]
     labels = np.asarray(labels, dtype=object)
@@ -810,7 +807,7 @@ def auto_pairs_mds(mds, labels, qlo=0.15, qhi=0.85):
     return df
 
 # ═══════════════════════════════════════════════════════════
-# NEUTRALITÉ (v7.1)
+# NEUTRALITÉ
 # ═══════════════════════════════════════════════════════════
 def tajimas_d(gt):
     n_ind, n_snp = gt.shape
@@ -897,7 +894,7 @@ def fay_wu_h(gt):
             "interpretation": "Balayage sélectif" if H < 0 else "Neutre/goulot"}
 
 # ═══════════════════════════════════════════════════════════
-# GWAS LMM (v7.1 inline)
+# GWAS LMM
 # ═══════════════════════════════════════════════════════════
 def _estimate_delta(Y, X, K):
     d, U = np.linalg.eigh(K); d = np.maximum(d, 0)
@@ -1009,7 +1006,7 @@ def gwas_thresholds(pvals, alpha=0.05):
             "n_sig_fdr": int(len(sig))}
 
 # ═══════════════════════════════════════════════════════════
-# VEP + GO + KEGG (v7.1 inline)
+# VEP + GO + KEGG
 # ═══════════════════════════════════════════════════════════
 def vep_annotate(snps_df):
     import time
@@ -1426,7 +1423,7 @@ def build_supp_tables(state):
     return tables
 
 # ═══════════════════════════════════════════════════════════
-# ÉTAT — APRÈS TOUS LES IMPORTS ET DÉFINITIONS
+# ÉTAT
 # ═══════════════════════════════════════════════════════════
 STATE_KEYS = ["gt", "ind_df", "snp_df", "gt_filt", "ind_filt", "snp_filt",
               "qc_stats", "gt_snp", "ind_snp", "snp_snp",
@@ -1475,22 +1472,22 @@ def has_pruned():
 # MAIN
 # ═══════════════════════════════════════════════════════════
 def main():
-    init_state()  # ← maintenant st est bien importé
+    init_state()
     st.title("🐄 Bovine SNP Platform v7.2")
     st.caption("v6.2 (toutes fonctionnalités) + v7.1 (rigueur) — autonome")
 
+    # ══════════ SIDEBAR — SANS key= (Streamlit gère auto) ══════════
     with st.sidebar:
         st.header("📁 Données")
         mode = st.radio("Source :", ["Demo", "PED/MAP", "VCF",
-                                     "Convertisseur Axiom"],
-                        index=0, key="sb_mode")
+                                     "Convertisseur Axiom"], index=0)
+
         if mode == "Demo":
             c1, c2 = st.columns(2)
-            ni = c1.number_input("Ind.", 20, 500, 150, 10, key="sb_ni")
-            ns = c2.number_input("SNPs", 100, 5000, 800, 100, key="sb_ns")
-            np_ = st.slider("Populations", 2, 14, 4, key="sb_np")
-            if st.button("🎲 Générer", use_container_width=True,
-                         key="sb_gen"):
+            ni = c1.number_input("Ind.", 20, 500, 150, 10)
+            ns = c2.number_input("SNPs", 100, 5000, 800, 100)
+            np_ = st.slider("Populations", 2, 14, 4)
+            if st.button("🎲 Générer", use_container_width=True):
                 with st.spinner("Génération..."):
                     gt, ind, snp = demo_data(int(ni), int(ns), int(np_))
                     st.session_state.gt = gt
@@ -1498,14 +1495,12 @@ def main():
                     st.session_state.snp_df = snp
                     reset_derived()
                 st.success(f"✅ {gt.shape[0]} × {gt.shape[1]}")
+
         elif mode == "PED/MAP":
-            pf = st.file_uploader(".ped", type=["ped", "gz", "txt"],
-                                   key="sb_p")
-            mf = st.file_uploader(".map", type=["map", "gz", "txt"],
-                                   key="sb_m")
+            pf = st.file_uploader(".ped", type=["ped", "gz", "txt"])
+            mf = st.file_uploader(".map", type=["map", "gz", "txt"])
             if pf and mf and st.button("📥 Charger",
-                                        use_container_width=True,
-                                        key="sb_lp"):
+                                        use_container_width=True):
                 try:
                     map_df = parse_map(mf.read())
                     gt, ind = parse_ped(pf.read(), len(map_df))
@@ -1521,11 +1516,10 @@ def main():
                     st.success(f"✅ {gt.shape[0]} × {gt.shape[1]}")
                 except Exception as e:
                     st.error(f"❌ {e}")
+
         elif mode == "VCF":
-            vf = st.file_uploader(".vcf", type=["vcf", "gz", "txt"],
-                                   key="sb_v")
-            if vf and st.button("📥 Charger", use_container_width=True,
-                                 key="sb_lv"):
+            vf = st.file_uploader(".vcf", type=["vcf", "gz", "txt"])
+            if vf and st.button("📥 Charger", use_container_width=True):
                 try:
                     gt, ind, snp = parse_vcf(vf.read())
                     if ind["FID"].nunique() <= 1:
@@ -1541,18 +1535,12 @@ def main():
 
         st.divider()
         st.header("⚙️ Seuils QC")
-        geno = st.slider("--geno", 0.0, 0.5, DEFAULTS["geno"], 0.01,
-                         key="sb_g")
-        mind = st.slider("--mind", 0.0, 0.5, DEFAULTS["mind"], 0.01,
-                         key="sb_mi")
-        maf_t = st.slider("MAF", 0.0, 0.5, DEFAULTS["maf"], 0.01,
-                          key="sb_m")
-        hwe_t = st.number_input("HWE", value=DEFAULTS["hwe"],
-                                format="%.0e", key="sb_h")
-        het_sd = st.slider("HET ±σ", 1.0, 5.0, DEFAULTS["het_sd"], 0.1,
-                           key="sb_hs")
-        ld_r2 = st.slider("LD r²", 0.05, 0.5, DEFAULTS["ld_r2"], 0.05,
-                          key="sb_ld")
+        geno = st.slider("--geno", 0.0, 0.5, DEFAULTS["geno"], 0.01)
+        mind = st.slider("--mind", 0.0, 0.5, DEFAULTS["mind"], 0.01)
+        maf_t = st.slider("MAF", 0.0, 0.5, DEFAULTS["maf"], 0.01)
+        hwe_t = st.number_input("HWE", value=DEFAULTS["hwe"], format="%.0e")
+        het_sd = st.slider("HET ±σ", 1.0, 5.0, DEFAULTS["het_sd"], 0.1)
+        ld_r2 = st.slider("LD r²", 0.05, 0.5, DEFAULTS["ld_r2"], 0.05)
 
         st.divider()
         st.header("🐄 Groupes de races")
@@ -1563,8 +1551,7 @@ def main():
                 for gn in ["Laitier", "Viande", "Cornu", "Rustique"]:
                     sel = st.multiselect(
                         f"→ {gn}", all_pops,
-                        default=st.session_state["trait_groups"].get(gn, []),
-                        key=f"grp_{gn}")
+                        default=st.session_state["trait_groups"].get(gn, []))
                     st.session_state["trait_groups"][gn] = sel
 
         st.divider()
@@ -1580,20 +1567,20 @@ def main():
         st.info("👉 Générez un jeu de démo, importez PED/MAP/VCF, "
                 "ou utilisez le Convertisseur Axiom.")
         st.markdown("""
-        ### 🧬 v7.2 — 12 onglets
+        ### 🧬 v7.2 — Fusion v6.2 + v7.1 (15 onglets)
 
         | Onglet | Contenu |
         |--------|---------|
         | 🏠 Aperçu | Statistiques |
         | 🧹 QC | Cascade complète |
-        | ✂️ LD Pruning | Indep-pairwise |
+        | ✂️ LD | Indep-pairwise |
         | 🧬 Structure | PCA + MDS + KING |
         | 🎨 Admixture | NMF |
         | 📈 Démographie | LD decay + ROH |
         | 🔍 Sélection | FST Manhattan |
         | 📤 Export | PLINK |
-        | 🧬 Binômes | 6 modes + signatures |
-        | 🧪 GWAS 10 cM | Local |
+        | 🧬 Binômes | Manuelle + signatures + groupes |
+        | 🧪 GWAS 10cM | Local par groupe |
         | 🔬 **FST Weir-Cockerham** | IC bootstrap |
         | 📊 **Neutralité** | Tajima + Fu&Li + Fay&Wu |
         | 🧪 **GWAS LMM** | QQ + λGC |
@@ -1612,7 +1599,7 @@ def main():
                     "🔬 FST WC", "📊 Neutralité",
                     "🧪 GWAS LMM", "🧬 VEP", "📄 Rapport"])
 
-    # TAB 0 : Aperçu
+    # TAB 0
     with tabs[0]:
         c1, c2, c3 = st.columns(3)
         c1.metric("Individus", gt.shape[0])
@@ -1665,8 +1652,7 @@ def main():
         else:
             gu = (st.session_state.gt_pruned if has_pruned()
                   else st.session_state.gt_filt)
-            if st.button("▶ PCA + MDS + KING", type="primary",
-                         key="str_btn"):
+            if st.button("▶ PCA + MDS + KING", type="primary", key="str_btn"):
                 with st.spinner("PCA..."):
                     sc, vp = pca_calc(gu, 10)
                     st.session_state.pca_scores = sc
